@@ -1,26 +1,107 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
+/* Variáveis */
+:root{
+  --background: linear-gradient(#002236, #000000, #002236);
+  --foreground: #000000;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root{
     --background: #0a0a0a;
     --foreground: #ededed;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html, body {
+  font-family: var(--font-inter, Inter, sans-serif);
+  font-size: 1rem;
+}
+
+.title {
+  font-family: var(--font-marmelad, cursive, sans-serif) !important;
+  font-size: 2.6rem !important;
+  font-weight: 400;
+}
+
+h1.title {
+  font-family: var(--font-marmelad, cursive, sans-serif) !important;
+}
+
+/* ===== Estilos de Botões ===== */
+.btn {
+  padding: 0.5rem 2rem;
+  border-radius: 0.375rem;
+  border: none;
+  width: 56%;
+  height: 5.3vh;
+  font-weight: 600;
+  background-color: #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-primary { 
+  background: linear-gradient(to right, #3489F2, #0BB0D7); 
+}
+.btn-primary:hover {  
+  background: linear-gradient(to right, #135bb4, #0f809a); 
+}
+
+.btn-secundary { 
+  background: linear-gradient(to right, #F97800, #EF4443); 
+}
+.btn-secundary:hover {  
+  background: linear-gradient(to right, #A04204, #A42423);
+} 
+
+.btn-portaria{ 
+  background: linear-gradient(to right, #1FC364, #12BA7D); 
+}
+.btn-portaria:hover{ 
+  background: linear-gradient(to right, #069240ff, #018f5bff); 
+}
+
+.btn-entregador{ 
+  background: linear-gradient(to right, #F77B14, #EBB009); 
+}
+.btn-entregador:hover{ 
+  background: linear-gradient(to right, #ce5d00ff, #b28407ff); 
+}
+
+.btn-myprofile{ 
+  background: linear-gradient(to right, #328BF1, #F08B10); 
+}
+.btn-myprofile:hover{ 
+  background: linear-gradient(to right, #083F7F, #B56A0F); 
+}
+
+.btn-transparent{
+  border: solid #1f9ce4;
+}
+
+.btn-transparent:hover{
+  border: solid #084571;
+}
+
+
+/* === Responsividade === */
+@media (max-width: 768px) {
+  .title { font-size: 2rem !important; }
+
+  .w-\[38vw\] { width: 90%; }
+
+  .px-20 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .title { font-size: 1.5rem !important; }
+  h3 { font-size: 0.9rem; }
+
+  .w-\[7vw\] { width: 20%; }
 }
