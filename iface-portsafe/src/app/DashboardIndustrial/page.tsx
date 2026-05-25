@@ -57,7 +57,6 @@ export default function Dashboard() {
           <DeliveriesTable deliveries={mockDeliveries} />
         </div>
       </div>
-      <AlertsPanel alerts={mockAlerts} feed={mockFeed} />
     </div>
   );
 }
