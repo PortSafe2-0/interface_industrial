@@ -5,11 +5,10 @@ import Image from 'next/image';
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: Archive,         label: "Armários",  active: false },
   { icon: Package,         label: "Entregas",  active: false },
   { icon: Users,           label: "Moradores", active: false },
-  { icon: FileText,        label: "Relatórios",active: false },
-  { icon: Settings,        label: "Configurações", active: false },
+  // { icon: FileText,        label: "Relatórios",active: false },
+  // { icon: Settings,        label: "Configurações", active: false },
 ];
 
 export default function Sidebar() {
