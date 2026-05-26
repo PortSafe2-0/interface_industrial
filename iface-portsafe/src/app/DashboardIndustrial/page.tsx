@@ -25,7 +25,7 @@ export default function Dashboard() {
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-r from-[#002236] via-black to-[#002134]">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex-shrink-0 bg-[#0a1628] border-b border-[#1e3050] px-6 py-3">
+        <header className="flex-shrink-0 bg-[#0a1628] border-b border-[#1e3050] px-6 py-3"> 
           <div className="flex items-center justify-between">
             <div className="mt-4 mb-4 ml-4">
               <h1 className="font-head font-bold text-4xl text-[#e8f0ff] tracking-wide">Painel Operacional</h1>

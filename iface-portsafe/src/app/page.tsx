@@ -1,10 +1,10 @@
 "use client";
 
-import SelectProfilePage from "./General/SelectProfilePage/page";
+import LoginPage from "./General/LoginPage/page";
 
 
 export default function Home() {
   return (
-    <SelectProfilePage />
+    <LoginPage />
   );
 }
