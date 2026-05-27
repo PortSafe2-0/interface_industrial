@@ -2,10 +2,11 @@
 import { LayoutDashboard, Archive, Package, Users, FileText, Settings, LogOut, Shield } from "lucide-react";
 import IconHorizontal from '@/assets/icons/icon_horizontal.png';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { href: "/DashboardIndustrial", icon: LayoutDashboard, label: "Dashboard" },
+  { href: '/DashboardIndustrial', icon: LayoutDashboard, label: "Dashboard" },
   { href: "/Deliveries",         icon: Package,         label: "Entregas" },
   { href: "/Residents",          icon: Users,           label: "Moradores" },
 ];
@@ -25,7 +26,8 @@ export default function Sidebar() {
         {navItems.map(({ href, icon: Icon, label }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
-            <button
+            <Link
+              href={href}
               key={label}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group relative ${
                 isActive
@@ -38,7 +40,7 @@ export default function Sidebar() {
               )}
               <Icon size={16} />
               <span className="font-head tracking-wide">{label}</span>
-            </button>
+            </Link>
           );
         })}
       </nav>
@@ -58,10 +60,10 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 pb-4 border-t border-[#1e3050] pt-3">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#7a9bbf] hover:bg-[#1a2d50] hover:text-[#ff4d6a] transition-all">
+        <Link href="/General/LoginPage" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#7a9bbf] hover:bg-[#1a2d50] hover:text-[#ff4d6a] transition-all">
           <LogOut size={16} />
           <span className="font-head tracking-wide">Logout</span>
-        </button>
+        </Link>
       </div>
     </aside>
   );
