@@ -7,10 +7,44 @@ import LockerMap from "@/components/LockerMap";
 import DeliveryChart from "@/components/DeliveryChart";
 import DeliveriesTable from "@/components/DeliveriesTable";
 import AlertsPanel from "@/components/AlertsPanel";
-import { mockKPI, mockLockers, mockDeliveries, mockAlerts, mockFeed } from "@/mock-data";
+import { mockAlerts, mockFeed } from "@/mock-data";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { lockerService, deliveryService, kpiService, chartService } from "@/services/api";
+import type { KPI } from "@/types";
 
 export default function Dashboard() {
   const [time, setTime] = useState("");
+  const { user, isLoading } = useProtectedRoute();
+  const [lockers, setLockers] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
+  const [kpi, setKpi] = useState<KPI | null>(null);
+  const [chartData, setChartData] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [lockersData, deliveriesData, kpiData, chartDataResult] = await Promise.all([
+          lockerService.getAll(),
+          deliveryService.getAll(),
+          kpiService.calculate(),
+          chartService.getDeliveryData(),
+        ]);
+        setLockers(lockersData);
+        setDeliveries(deliveriesData);
+        setKpi(kpiData as KPI);
+        setChartData(chartDataResult);
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    if (!isLoading) {
+      fetchData();
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     const update = () => {
@@ -21,9 +55,20 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-gradient-to-r from-[#002236] via-black to-[#002134]">
+        <div className="text-center">
+          <div className="inline-block w-12 h-12 rounded-full border-4 border-[#1e3050] border-t-[#00aaff] animate-spin mb-4"></div>
+          <p className="text-[#7a9bbf] text-sm">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-r from-[#002236] via-black to-[#002134]">
-      <Sidebar />
+      <Sidebar user={user} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex-shrink-0 bg-[#0a1628] border-b border-[#1e3050] px-6 py-3"> 
           <div className="flex items-center justify-between">
@@ -49,12 +94,12 @@ export default function Dashboard() {
           </div>
         </header>
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <KPICards kpi={mockKPI} />
+          {kpi && <KPICards kpi={kpi} />}
           <div className="grid grid-cols-5 gap-4">
-            <div className="col-span-3"><LockerMap lockers={mockLockers} /></div>
-            <div className="col-span-2"><DeliveryChart /></div>
+            <div className="col-span-3"><LockerMap lockers={lockers} /></div>
+            <div className="col-span-2"><DeliveryChart data={chartData} /></div>
           </div>
-          <DeliveriesTable deliveries={mockDeliveries} />
+          <DeliveriesTable deliveries={deliveries} />
         </div>
       </div>
     </div>
