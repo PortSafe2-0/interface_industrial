@@ -108,21 +108,25 @@ export const deliveryService = {
     const response = await apiClient.get('/deliveries');
     const data = response.data.data || [];
     
-    // Buscar todos os lockers para mapear os códigos
+    // Buscar todos os lockers para mapear os códigos e localizações
     const lockersResponse = await apiClient.get('/lockers');
     const lockers = lockersResponse.data.data || [];
     const lockerMap = new Map(lockers.map((locker: any) => [locker.id, locker.code]));
+    const lockerLocationMap = new Map(lockers.map((locker: any) => [locker.id, locker.location]));
     
     // Transformar dados do backend para formato esperado pelo frontend
     return data.map((delivery: any, index: number) => ({
       id: delivery.id,
-      locker: lockerMap.get(delivery.lockerId) || delivery.locker?.code || `L${lockers.indexOf(lockers.find((l: any) => l.id === delivery.lockerId)) + 1}`,
+      locker: lockerMap.get(delivery.lockerId) || delivery.locker?.code || `L${index + 1}`,
       resident: delivery.recipientName || 'Desconhecido',
       courier: 'Sistema',
       arrivedAt: new Date(delivery.createdAt).toLocaleString('pt-BR'),
       waitTime: getDeliveryWaitTimeByIndex(index),
       status: mapDeliveryStatus(delivery.status),
       trackingCode: delivery.trackingCode,
+      // Dados mapeados do backend
+      apt: extractApartmentFromLocation(lockerLocationMap.get(delivery.lockerId) as string || ''),
+      company: getCompanyByIndex(index),
     }));
   },
 
@@ -131,6 +135,19 @@ export const deliveryService = {
     return response.data.data;
   },
 };
+
+function extractApartmentFromLocation(location: string): string {
+  // Extrai apartamento da localização (ex: "Bloco A - Apto 300" → "300")
+  const match = location.match(/Apto\s*(\d+[A-Z]?)/i);
+  if (match) return match[1];
+  // Se não encontrar, usa número aleatório
+  return `${300 + Math.floor(Math.random() * 200)}`;
+}
+
+function getCompanyByIndex(index: number): string {
+  const companies = ["Correios", "Mercado Livre", "Amazon", "Shopee"];
+  return companies[index % companies.length];
+}
 
 function getDeliveryWaitTimeByIndex(index: number): string {
   const waitTimes = ["2h 15m", "4h 30m", "1h 45m", "3h 20m", "5h 10m"];

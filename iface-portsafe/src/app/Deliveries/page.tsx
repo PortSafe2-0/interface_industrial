@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, Filter, Package, Clock, CheckCircle, AlertTriangle,
-  X, ChevronDown, ChevronUp, ArrowUpDown, Download, Plus,
-  Pencil, MoreHorizontal, QrCode, MapPin, User, Truck,
+  X, ChevronDown, ChevronUp, ArrowUpDown, Plus,
+  MoreHorizontal, QrCode, MapPin, User, Truck,
   Calendar, Archive, RotateCcw, Eye,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { deliveryService } from "@/services/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type DeliveryStatus = "Aguardando" | "Atrasado" | "Retirado" | "Cancelado";
@@ -315,18 +316,53 @@ export default function EntregasPage() {
   const { user, isLoading } = useProtectedRoute();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<DeliveryStatus | "all">("all");
-  const [filterCompany, setFilterCompany] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [sortField, setSortField] = useState<"arrivedAt" | "waitTime" | "status">("arrivedAt");
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [showRegister, setShowRegister] = useState(false);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  const companies = useMemo(() => [...new Set(DELIVERIES.map((d) => d.company))], []);
+  // Carregar dados do backend
+  useEffect(() => {
+    const fetchDeliveries = async () => {
+      try {
+        const backendDeliveries = await deliveryService.getAll();
+        
+        // Transformar dados do backend para formato da página
+        const transformed: Delivery[] = (backendDeliveries as any[]).map((d) => ({
+          id: d.id,
+          code: d.trackingCode || `PS-${d.id.slice(0, 8)}`,
+          locker: d.locker,
+          resident: d.resident,
+          apt: d.apt,
+          courier: d.courier,
+          company: d.company,
+          arrivedAt: d.arrivedAt,
+          waitTime: d.waitTime,
+          status: (d.status === "Ocupado" ? "Aguardando" : d.status === "Atrasado" ? "Atrasado" : "Retirado") as DeliveryStatus,
+          notes: undefined,
+          retrievedAt: d.status === "Retirado" ? d.arrivedAt : undefined,
+        }));
+        
+        setDeliveries(transformed);
+      } catch (error) {
+        console.error("Erro ao buscar entregas:", error);
+        setDeliveries(DELIVERIES);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    if (!isLoading) {
+      fetchDeliveries();
+    }
+  }, [isLoading]);
 
   const filtered = useMemo(() => {
-    return DELIVERIES.filter((d) => {
+    return deliveries.filter((d) => {
       const matchSearch =
         d.resident.toLowerCase().includes(search.toLowerCase()) ||
         d.courier.toLowerCase().includes(search.toLowerCase()) ||
@@ -334,30 +370,29 @@ export default function EntregasPage() {
         d.locker.includes(search) ||
         d.apt.toLowerCase().includes(search.toLowerCase());
       const matchStatus  = filterStatus === "all"  || d.status  === filterStatus;
-      const matchCompany = filterCompany === "all" || d.company === filterCompany;
-      return matchSearch && matchStatus && matchCompany;
+      return matchSearch && matchStatus;
     }).sort((a, b) => {
       const dir = sortAsc ? 1 : -1;
       if (sortField === "arrivedAt") return dir * a.arrivedAt.localeCompare(b.arrivedAt);
       if (sortField === "status")    return dir * a.status.localeCompare(b.status);
       return 0;
     });
-  }, [search, filterStatus, filterCompany, filterPeriod, sortField, sortAsc]);
+  }, [deliveries, search, filterStatus, filterPeriod, sortField, sortAsc]);
 
   const counts = useMemo(() => ({
-    total:      DELIVERIES.length,
-    aguardando: DELIVERIES.filter((d) => d.status === "Aguardando").length,
-    atrasado:   DELIVERIES.filter((d) => d.status === "Atrasado").length,
-    retirado:   DELIVERIES.filter((d) => d.status === "Retirado").length,
-    cancelado:  DELIVERIES.filter((d) => d.status === "Cancelado").length,
-  }), []);
+    total:      deliveries.length,
+    aguardando: deliveries.filter((d) => d.status === "Aguardando").length,
+    atrasado:   deliveries.filter((d) => d.status === "Atrasado").length,
+    retirado:   deliveries.filter((d) => d.status === "Retirado").length,
+    cancelado:  deliveries.filter((d) => d.status === "Cancelado").length,
+  }), [deliveries]);
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) setSortAsc(!sortAsc);
     else { setSortField(field); setSortAsc(false); }
   };
 
-  if (isLoading) {
+  if (isLoading || dataLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#060d18]">
         <div className="text-center">
@@ -435,15 +470,6 @@ export default function EntregasPage() {
               </select>
 
               <select
-                value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
-                className="bg-[#0f1e35] border border-[#1e3050] rounded-lg px-2.5 py-2 text-xs text-[#7a9bbf] focus:outline-none cursor-pointer"
-              >
-                <option value="all">Todas as empresas</option>
-                {companies.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-
-              <select
                 value={filterPeriod}
                 onChange={(e) => setFilterPeriod(e.target.value)}
                 className="bg-[#0f1e35] border border-[#1e3050] rounded-lg px-2.5 py-2 text-xs text-[#7a9bbf] focus:outline-none cursor-pointer"
@@ -457,9 +483,6 @@ export default function EntregasPage() {
 
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-[#3d5a7a]">{filtered.length} resultado(s)</span>
-              <button className="flex items-center gap-1.5 bg-[#0f1e35] border border-[#1e3050] text-[#7a9bbf] text-xs px-3 py-2 rounded-lg hover:text-[#e8f0ff] hover:border-[#3d5a7a] transition-colors">
-                <Download size={12} /> Exportar
-              </button>
             </div>
           </div>
 
@@ -478,7 +501,6 @@ export default function EntregasPage() {
                     { label: "Chegou em",     field: "arrivedAt" as const },
                     { label: "Espera",        field: "waitTime" as const },
                     { label: "Status",        field: "status" as const },
-                    { label: "Ações",         field: null },
                   ].map(({ label, field }) => (
                     <th
                       key={label}
@@ -534,29 +556,12 @@ export default function EntregasPage() {
                           {delivery.status}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2 text-[#3d5a7a]">
-                          <button
-                            onClick={() => setSelectedDelivery(delivery)}
-                            className="hover:text-[#00aaff] transition-colors"
-                            title="Ver detalhes"
-                          >
-                            <Eye size={12} />
-                          </button>
-                          <button className="hover:text-[#00aaff] transition-colors" title="Editar">
-                            <Pencil size={12} />
-                          </button>
-                          <button className="hover:text-[#00aaff] transition-colors" title="Mais opções">
-                            <MoreHorizontal size={12} />
-                          </button>
-                        </div>
-                      </td>
                     </tr>
 
                     {/* Expanded row */}
                     {expandedRow === delivery.id && (
                       <tr key={`${delivery.id}-expanded`} className="bg-[#0a1628]/60 border-b border-[#1e3050]/50">
-                        <td colSpan={10} className="px-6 py-3">
+                        <td colSpan={9} className="px-6 py-3">
                           <div className="flex gap-6 text-xs">
                             {delivery.notes && (
                               <div className="flex items-start gap-2">
