@@ -1,14 +1,18 @@
 "use client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const data = [
-  { day: "Mon", value: 8  },
-  { day: "Jur", value: 14 },
-  { day: "Miar", value: 11 },
-  { day: "Hoje", value: 23, today: true },
-  { day: "Ver",  value: 16 },
-  { day: "Sat",  value: 10 },
-  { day: "Sun",  value: 6  },
+interface DeliveryChartProps {
+  data?: Array<{ day: string; value: number; today?: boolean }>;
+}
+
+const defaultData = [
+  { day: "Dom", value: 8 },
+  { day: "Seg", value: 14 },
+  { day: "Ter", value: 11 },
+  { day: "Qua", value: 19 },
+  { day: "Qui", value: 23, today: true },
+  { day: "Sex", value: 16 },
+  { day: "Sab", value: 6 },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -23,14 +27,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function DeliveryChart() {
+export default function DeliveryChart({ data }: DeliveryChartProps) {
+  const chartData = data && data.length > 0 ? data : defaultData;
   return (
     <div className="bg-[#0f1e35] border border-[#1e3050] rounded-xl p-4 h-full">
       <div className="text-sm font-head font-semibold text-[#e8f0ff] mb-3 tracking-wide">
         Entregas — últimos 7 dias
       </div>
       <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={data} barSize={20}>
+        <BarChart data={chartData} barSize={20}>
           <XAxis
             dataKey="day"
             tick={{ fill: "#7a9bbf", fontSize: 11, fontFamily: "Rajdhani" }}
@@ -40,7 +45,7 @@ export default function DeliveryChart() {
           <YAxis hide />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0,170,255,0.05)" }} />
           <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-            {data.map((entry, index) => (
+            {(chartData || []).map((entry, index) => (
               <Cell
                 key={index}
                 fill={entry.today ? "#00aaff" : "#1a3a5c"}
