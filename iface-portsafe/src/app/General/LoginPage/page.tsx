@@ -5,7 +5,7 @@ import Button from '@/components/Button';
 import Input from '@/components/Input';
 import BackButton from "@/components/BackButton";
 import IconLogo from '@/assets/icons/icon_logo.png';
-import axios from 'axios';
+import { authService } from '@/services/api';
 import { useRouter } from "next/navigation";
 import Image from 'next/image';
 
@@ -13,6 +13,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -23,38 +24,43 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async () => {
     setError("");
+    setIsLoading(true);
+
+    if (!email || !password) {
+      setError('Por favor, preencha todos os campos.');
+      setIsLoading(false);
+      return;
+    }
 
     if (!validateEmail(email)) {
       setError('Formato de email inválido.');
+      setIsLoading(false);
       return;
     }
 
     try {
-      const response = await axios.post(
-        '/api/Auth/Login',
-        { UsernameOrEmail: email, Password: password },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      const response = await authService.login({ email, password });
 
-      const { usuario, token } = response.data;
+      localStorage.setItem("user", JSON.stringify(response.user));
+      localStorage.setItem("token", response.token);
 
-      localStorage.setItem("porteiro", JSON.stringify(usuario));
-      localStorage.setItem("token", token);
+      router.push("/DashboardIndustrial");
 
-      router.push("/Porter/PorterDashboardPage");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.Message || 
+                          error.message ||
+                          "Erro ao fazer login.";
+      setError(errorMessage);
+      console.error("Erro ao fazer login:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
-          setError("Email ou senha inválidos.");
-        } else if (error.response?.data?.Message || error.response?.data?.message) {
-          setError(error.response.data.Message || error.response.data.message);
-        } else {
-          setError("Erro ao fazer login.");
-        }
-      } else {
-        setError("Erro inesperado.");
-      }
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleLogin();
     }
   };
 
@@ -84,6 +90,7 @@ const LoginPage: React.FC = () => {
             type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={handleKeyPress}
             className="w-full h-10 pl-4"
           />
 
@@ -93,6 +100,7 @@ const LoginPage: React.FC = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
             className="w-full h-10 pl-4"
           />
 
@@ -101,10 +109,11 @@ const LoginPage: React.FC = () => {
           </a>
 
           <Button
-            nome="Entrar"
+            nome={isLoading ? "Entrando..." : "Entrar"}
             estilo="primary"
             clique={handleLogin}
             className='mt-3 mb-3'
+            disabled={isLoading}
           />
 
           <h2 className="text-gray-400 text-sm">Não tem uma conta?</h2>
