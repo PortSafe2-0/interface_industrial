@@ -1,3 +1,18 @@
+// User & Auth
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+}
+
+export interface AuthToken {
+  token: string;
+  user: User;
+}
+
+// Locker & Delivery
 export type LockerStatus = "empty" | "occupied" | "error" | "overdue" | "freed";
 
 export interface Locker {
