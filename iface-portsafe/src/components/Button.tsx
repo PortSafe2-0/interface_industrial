@@ -5,14 +5,16 @@ interface IBotao {
   className?: string;
   icon?: React.ReactNode;
   children?: React.ReactNode;
+  disabled?: boolean;
 }
 
-export default function Button({ nome, estilo, clique, className, icon }: IBotao) {
+export default function Button({ nome, estilo, clique, className, icon, disabled }: IBotao) {
   return (
     <div className="flex justify-center">
       <button
         onClick={clique}
-        className={`flex items-center justify-center gap-2 btn btn-${estilo} ${className ?? ""}`}
+        disabled={disabled}
+        className={`flex items-center justify-center gap-2 btn btn-${estilo} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className ?? ""}`}
       >
         {icon && <span>{icon}</span>}
         {nome}

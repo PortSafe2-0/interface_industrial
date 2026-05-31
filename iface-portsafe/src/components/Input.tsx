@@ -9,6 +9,7 @@ interface InputProps {
   type?: "text" | "password" | "email";
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   className?: string;
   icon?: React.ReactNode;
 }
@@ -18,6 +19,7 @@ export default function Input({
   type = "text",
   value,
   onChange,
+  onKeyPress,
   className
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +41,7 @@ export default function Input({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        onKeyPress={onKeyPress}
         className={className}
         style={{
           backgroundColor: "#333B40",
