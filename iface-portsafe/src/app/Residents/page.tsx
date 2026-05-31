@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, Filter, Users, UserPlus, X, Pencil, MoreHorizontal,
   Eye, MapPin, Phone, Mail, Package, Clock, CheckCircle,
-  ArrowUpDown, Download, Shield, ShieldOff, AlertTriangle,
+  ArrowUpDown, Shield, ShieldOff, AlertTriangle,
   ChevronDown, ChevronUp, Archive,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { userService } from "@/services/api";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type ResidentStatus = "Ativo" | "Inativo" | "Bloqueado";
@@ -16,9 +17,6 @@ type ResidentStatus = "Ativo" | "Inativo" | "Bloqueado";
 interface Resident {
   id: string;
   name: string;
-  apt: string;
-  block: string;
-  floor: number;
   phone: string;
   email: string;
   status: ResidentStatus;
@@ -41,22 +39,7 @@ interface DeliveryRecord {
 }
 
 // ── Mock data ──────────────────────────────────────────────────────────────
-const RESIDENTS: Resident[] = [
-  { id:"1",  name:"Ana Oliveira",    apt:"102B", block:"A", floor:1, phone:"(11) 98765-4321", email:"ana.oliveira@email.com",    status:"Ativo",    since:"Jan 2021", deliveries:47, pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"123.456.789-00" },
-  { id:"2",  name:"Carlos Lima",     apt:"204A", block:"A", floor:2, phone:"(11) 97654-3210", email:"carlos.lima@email.com",     status:"Ativo",    since:"Mar 2020", deliveries:32, pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"234.567.890-11" },
-  { id:"3",  name:"Fernanda Costa",  apt:"301",  block:"B", floor:3, phone:"(11) 96543-2109", email:"fernanda.costa@email.com",  status:"Ativo",    since:"Jun 2022", deliveries:18, pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"345.678.901-22" },
-  { id:"4",  name:"Rafael Torres",   apt:"105",  block:"A", floor:1, phone:"(11) 95432-1098", email:"rafael.torres@email.com",   status:"Ativo",    since:"Ago 2019", deliveries:61, pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"456.789.012-33" },
-  { id:"5",  name:"Marcos Souza",    apt:"407",  block:"B", floor:4, phone:"(11) 94321-0987", email:"marcos.souza@email.com",    status:"Ativo",    since:"Nov 2021", deliveries:29, pendingDeliveries:0, lastDelivery:"20/11/2022", cpf:"567.890.123-44", notes:"Preferência de notificação por SMS" },
-  { id:"6",  name:"Patrícia Nunes",  apt:"203",  block:"A", floor:2, phone:"(11) 93210-9876", email:"patricia.nunes@email.com",  status:"Ativo",    since:"Fev 2020", deliveries:54, pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"678.901.234-55" },
-  { id:"7",  name:"Luiz Henrique",   apt:"110",  block:"A", floor:1, phone:"(11) 92109-8765", email:"luiz.henrique@email.com",   status:"Ativo",    since:"Abr 2021", deliveries:23, pendingDeliveries:0, lastDelivery:"21/11/2022", cpf:"789.012.345-66" },
-  { id:"8",  name:"Juliana Alves",   apt:"502",  block:"C", floor:5, phone:"(11) 91098-7654", email:"juliana.alves@email.com",   status:"Ativo",    since:"Set 2018", deliveries:88, pendingDeliveries:1, lastDelivery:"21/11/2022", cpf:"890.123.456-77", notes:"Entrega +24h pendente — notificar portaria" },
-  { id:"9",  name:"Roberto Melo",    apt:"308",  block:"B", floor:3, phone:"(11) 90987-6543", email:"roberto.melo@email.com",    status:"Ativo",    since:"Jul 2022", deliveries:11, pendingDeliveries:1, lastDelivery:"21/11/2022", cpf:"901.234.567-88" },
-  { id:"10", name:"Camila Reis",     apt:"401",  block:"B", floor:4, phone:"(11) 89876-5432", email:"camila.reis@email.com",     status:"Ativo",    since:"Jan 2023", deliveries:7,  pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"012.345.678-99" },
-  { id:"11", name:"Diego Faria",     apt:"206",  block:"A", floor:2, phone:"(11) 88765-4321", email:"diego.faria@email.com",     status:"Ativo",    since:"Out 2020", deliveries:39, pendingDeliveries:1, lastDelivery:"22/11/2022", cpf:"111.222.333-44" },
-  { id:"12", name:"Marina Castro",   apt:"503",  block:"C", floor:5, phone:"(11) 87654-3210", email:"marina.castro@email.com",   status:"Inativo",  since:"Mai 2019", deliveries:72, pendingDeliveries:0, lastDelivery:"10/10/2022", cpf:"222.333.444-55", notes:"Moradora temporariamente ausente" },
-  { id:"13", name:"Felipe Duarte",   apt:"104",  block:"A", floor:1, phone:"(11) 86543-2109", email:"felipe.duarte@email.com",   status:"Bloqueado",since:"Dez 2021", deliveries:15, pendingDeliveries:0, lastDelivery:"05/09/2022", cpf:"333.444.555-66", notes:"Acesso bloqueado — pendência administrativa" },
-  { id:"14", name:"Beatriz Santos",  apt:"302",  block:"B", floor:3, phone:"(11) 85432-1098", email:"beatriz.santos@email.com",  status:"Ativo",    since:"Mar 2022", deliveries:21, pendingDeliveries:0, lastDelivery:"18/11/2022", cpf:"444.555.666-77" },
-];
+const RESIDENTS: Resident[] = [];
 
 const RESIDENT_DELIVERIES: DeliveryRecord[] = [
   { id:"1", code:"PS-20221122-001", locker:"03", company:"Correios",      arrivedAt:"22/11/2022 13:17", status:"Aguardando" },
@@ -278,109 +261,59 @@ function ResidentDrawer({
   );
 }
 
-// ── Register Modal ─────────────────────────────────────────────────────────
-function RegisterModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#0f1e35] border border-[#1e3050] rounded-2xl p-6 w-[440px] shadow-2xl">
-        <div className="flex items-center justify-between mb-5">
-          <span className="font-head font-bold text-lg text-[#e8f0ff] tracking-wide">Cadastrar Morador</span>
-          <button onClick={onClose} className="text-[#3d5a7a] hover:text-[#7a9bbf]"><X size={16} /></button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Nome completo",    placeholder: "Nome do morador",   col: "col-span-2" },
-            { label: "CPF",             placeholder: "000.000.000-00",     col: "" },
-            { label: "Telefone",        placeholder: "(11) 99999-9999",    col: "" },
-            { label: "E-mail",          placeholder: "email@exemplo.com",  col: "col-span-2" },
-            { label: "Apartamento",     placeholder: "Ex: 102B",           col: "" },
-            { label: "Bloco",           placeholder: "Ex: A",              col: "" },
-          ].map(({ label, placeholder, col }) => (
-            <div key={label} className={col}>
-              <label className="text-[10px] text-[#7a9bbf] uppercase tracking-wide block mb-1">{label}</label>
-              <input
-                type="text"
-                placeholder={placeholder}
-                className="w-full bg-[#0a1628] border border-[#1e3050] rounded-lg px-3 py-2 text-sm text-[#e8f0ff] placeholder-[#3d5a7a] focus:outline-none focus:border-[#00aaff]/50"
-              />
-            </div>
-          ))}
-
-          <div className="col-span-2">
-            <label className="text-[10px] text-[#7a9bbf] uppercase tracking-wide block mb-1">Observações (opcional)</label>
-            <textarea
-              placeholder="Observações sobre o morador..."
-              rows={2}
-              className="w-full bg-[#0a1628] border border-[#1e3050] rounded-lg px-3 py-2 text-sm text-[#e8f0ff] placeholder-[#3d5a7a] focus:outline-none focus:border-[#00aaff]/50 resize-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-[#1e3050] text-[#7a9bbf] text-sm hover:bg-[#1a2d50] transition-colors">
-            Cancelar
-          </button>
-          <button className="flex-1 py-2.5 rounded-lg bg-[#00aaff] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-            Cadastrar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function MoradoresPage() {
   const { user, isLoading } = useProtectedRoute();
-  const [search, setSearch]               = useState("");
-  const [filterStatus, setFilterStatus]   = useState<ResidentStatus | "all">("all");
-  const [filterBlock, setFilterBlock]     = useState("all");
-  const [filterFloor, setFilterFloor]     = useState("all");
   const [sortField, setSortField]         = useState<"name" | "apt" | "deliveries">("name");
   const [sortAsc, setSortAsc]             = useState(true);
-  const [view, setView]                   = useState<"grid" | "table">("table");
   const [selectedResident, setSelected]   = useState<Resident | null>(null);
-  const [showRegister, setShowRegister]   = useState(false);
   const [expandedRow, setExpandedRow]     = useState<string | null>(null);
+  const [residents, setResidents]         = useState<Resident[]>([]);
+  const [dataLoading, setDataLoading]     = useState(true);
 
-  const blocks = useMemo(() => [...new Set(RESIDENTS.map((r) => r.block))].sort(), []);
-  const floors  = useMemo(() => [...new Set(RESIDENTS.map((r) => r.floor))].sort((a, b) => a - b), []);
+  // Carregar dados do backend
+  useEffect(() => {
+    const fetchResidents = async () => {
+      try {
+        const backendResidents = await userService.getAll();
+        setResidents(backendResidents);
+      } catch (error) {
+        console.error("Erro ao buscar moradores:", error);
+        setResidents(RESIDENTS);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    if (!isLoading) {
+      fetchResidents();
+    }
+  }, [isLoading]);
 
   const filtered = useMemo(() => {
-    return RESIDENTS.filter((r) => {
-      const matchSearch =
-        r.name.toLowerCase().includes(search.toLowerCase()) ||
-        r.apt.toLowerCase().includes(search.toLowerCase()) ||
-        r.email.toLowerCase().includes(search.toLowerCase()) ||
-        r.cpf.includes(search);
-      const matchStatus = filterStatus === "all" || r.status === filterStatus;
-      const matchBlock  = filterBlock  === "all" || r.block  === filterBlock;
-      const matchFloor  = filterFloor  === "all" || String(r.floor) === filterFloor;
-      return matchSearch && matchStatus && matchBlock && matchFloor;
-    }).sort((a, b) => {
+    return residents.sort((a, b) => {
       const dir = sortAsc ? 1 : -1;
       if (sortField === "name")       return dir * a.name.localeCompare(b.name);
       if (sortField === "apt")        return dir * a.apt.localeCompare(b.apt);
       if (sortField === "deliveries") return dir * (a.deliveries - b.deliveries);
       return 0;
     });
-  }, [search, filterStatus, filterBlock, filterFloor, sortField, sortAsc]);
+  }, [residents, sortField, sortAsc]);
 
   const counts = useMemo(() => ({
-    total:     RESIDENTS.length,
-    ativos:    RESIDENTS.filter((r) => r.status === "Ativo").length,
-    inativos:  RESIDENTS.filter((r) => r.status === "Inativo").length,
-    bloqueados:RESIDENTS.filter((r) => r.status === "Bloqueado").length,
-    pendentes: RESIDENTS.filter((r) => r.pendingDeliveries > 0).length,
-  }), []);
+    total:     residents.length,
+    ativos:    residents.filter((r) => r.status === "Ativo").length,
+    inativos:  residents.filter((r) => r.status === "Inativo").length,
+    bloqueados:residents.filter((r) => r.status === "Bloqueado").length,
+    pendentes: residents.filter((r) => r.pendingDeliveries > 0).length,
+  }), [residents]);
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) setSortAsc(!sortAsc);
     else { setSortField(field); setSortAsc(true); }
   };
 
-  if (isLoading) {
+  if (isLoading || dataLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#060d18]">
         <div className="text-center">
@@ -403,12 +336,6 @@ export default function MoradoresPage() {
               <h1 className="font-head font-bold text-2xl text-[#e8f0ff] tracking-wide">Moradores</h1>
               <p className="text-xs text-[#7a9bbf] mt-0.5">Gestão de moradores e histórico de entregas</p>
             </div>
-            <button
-              onClick={() => setShowRegister(true)}
-              className="flex items-center gap-2 bg-[#00aaff] hover:opacity-90 transition-opacity text-white text-sm font-semibold px-4 py-2 rounded-lg"
-            >
-              <UserPlus size={14} /> Cadastrar morador
-            </button>
           </div>
         </header>
 
@@ -430,266 +357,130 @@ export default function MoradoresPage() {
             ))}
           </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 max-w-xs">
-              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#3d5a7a]" />
-              <input
-                type="text"
-                placeholder="Nome, apartamento, e-mail, CPF..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#0f1e35] border border-[#1e3050] rounded-lg pl-8 pr-3 py-2 text-xs text-[#e8f0ff] placeholder-[#3d5a7a] focus:outline-none focus:border-[#00aaff]/50"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Filter size={12} className="text-[#3d5a7a]" />
-              <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as ResidentStatus | "all")}
-                className="bg-[#0f1e35] border border-[#1e3050] rounded-lg px-2.5 py-2 text-xs text-[#7a9bbf] focus:outline-none cursor-pointer">
-                <option value="all">Todos os status</option>
-                <option value="Ativo">Ativo</option>
-                <option value="Inativo">Inativo</option>
-                <option value="Bloqueado">Bloqueado</option>
-              </select>
-
-              <select value={filterBlock} onChange={(e) => setFilterBlock(e.target.value)}
-                className="bg-[#0f1e35] border border-[#1e3050] rounded-lg px-2.5 py-2 text-xs text-[#7a9bbf] focus:outline-none cursor-pointer">
-                <option value="all">Todos os blocos</option>
-                {blocks.map((b) => <option key={b} value={b}>Bloco {b}</option>)}
-              </select>
-
-              <select value={filterFloor} onChange={(e) => setFilterFloor(e.target.value)}
-                className="bg-[#0f1e35] border border-[#1e3050] rounded-lg px-2.5 py-2 text-xs text-[#7a9bbf] focus:outline-none cursor-pointer">
-                <option value="all">Todos os andares</option>
-                {floors.map((f) => <option key={f} value={String(f)}>{f}º Andar</option>)}
-              </select>
-            </div>
-
-            {/* View toggle */}
-            <div className="flex bg-[#0f1e35] border border-[#1e3050] rounded-lg overflow-hidden">
-              {(["table", "grid"] as const).map((v) => (
-                <button key={v} onClick={() => setView(v)}
-                  className={`px-3 py-1.5 text-xs font-head font-semibold tracking-wide transition-colors ${
-                    view === v ? "bg-[#00aaff]/15 text-[#00aaff]" : "text-[#7a9bbf] hover:text-[#e8f0ff]"
-                  }`}>
-                  {v === "table" ? "Tabela" : "Cards"}
-                </button>
-              ))}
-            </div>
-
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-[#3d5a7a]">{filtered.length} morador(es)</span>
-              <button className="flex items-center gap-1.5 bg-[#0f1e35] border border-[#1e3050] text-[#7a9bbf] text-xs px-3 py-2 rounded-lg hover:text-[#e8f0ff] transition-colors">
-                <Download size={12} /> Exportar
-              </button>
-            </div>
+          {/* Results count */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#3d5a7a]">{filtered.length} morador(es)</span>
           </div>
 
-          {/* Table view */}
-          {view === "table" && (
-            <div className="bg-[#0f1e35] border border-[#1e3050] rounded-xl overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-[#1e3050] bg-[#0a1628]">
-                    <th className="w-8 py-2.5 px-3" />
-                    {[
-                      { label: "Morador",   field: "name" as const },
-                      { label: "Apto / Bloco", field: "apt" as const },
-                      { label: "Contato",   field: null },
-                      { label: "Entregas",  field: "deliveries" as const },
-                      { label: "Pendentes", field: null },
-                      { label: "Última entrega", field: null },
-                      { label: "Status",    field: null },
-                      { label: "Ações",     field: null },
-                    ].map(({ label, field }) => (
-                      <th key={label} onClick={() => field && toggleSort(field)}
-                        className={`text-left text-[#7a9bbf] font-medium py-2.5 px-3 whitespace-nowrap ${field ? "cursor-pointer hover:text-[#e8f0ff]" : ""}`}>
-                        <div className="flex items-center gap-1">
-                          {label}
-                          {field && <ArrowUpDown size={10} className="opacity-40" />}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((resident) => {
-                    const avatarColor = AVATAR_COLORS[parseInt(resident.id) % AVATAR_COLORS.length];
-                    const isExpanded = expandedRow === resident.id;
-                    return (
-                      <>
-                        <tr key={resident.id}
-                          className={`border-b border-[#1e3050]/50 hover:bg-[#1a2d50]/40 transition-colors ${
-                            resident.status === "Bloqueado" ? "opacity-60" : ""
-                          }`}>
-                          <td className="py-2.5 px-3">
-                            <button onClick={() => setExpandedRow(isExpanded ? null : resident.id)}
-                              className="text-[#3d5a7a] hover:text-[#7a9bbf] transition-colors">
-                              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                            </button>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center font-head font-bold text-[10px] flex-shrink-0 ${avatarColor}`}>
-                                {initials(resident.name)}
-                              </div>
-                              <span className="text-[#e8f0ff] font-medium">{resident.name}</span>
+          {/* Table */}
+          <div className="bg-[#0f1e35] border border-[#1e3050] rounded-xl overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[#1e3050] bg-[#0a1628]">
+                  <th className="w-8 py-2.5 px-3" />
+                  {[
+                    { label: "Morador",   field: "name" as const },
+                    { label: "Contato",   field: null },
+                    { label: "Entregas",  field: "deliveries" as const },
+                    { label: "Pendentes", field: null },
+                    { label: "Última entrega", field: null },
+                    { label: "Status",    field: null },
+                  ].map(({ label, field }) => (
+                    <th key={label} onClick={() => field && toggleSort(field)}
+                      className={`text-left text-[#7a9bbf] font-medium py-2.5 px-3 whitespace-nowrap ${field ? "cursor-pointer hover:text-[#e8f0ff]" : ""}`}>
+                      <div className="flex items-center gap-1">
+                        {label}
+                        {field && <ArrowUpDown size={10} className="opacity-40" />}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((resident) => {
+                  const avatarColor = AVATAR_COLORS[parseInt(resident.id) % AVATAR_COLORS.length];
+                  const isExpanded = expandedRow === resident.id;
+                  return (
+                    <>
+                      <tr key={resident.id}
+                        className={`border-b border-[#1e3050]/50 hover:bg-[#1a2d50]/40 transition-colors ${
+                          resident.status === "Bloqueado" ? "opacity-60" : ""
+                        }`}>
+                        <td className="py-2.5 px-3">
+                          <button onClick={() => setExpandedRow(isExpanded ? null : resident.id)}
+                            className="text-[#3d5a7a] hover:text-[#7a9bbf] transition-colors">
+                            {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          </button>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-head font-bold text-[10px] flex-shrink-0 ${avatarColor}`}>
+                              {initials(resident.name)}
                             </div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="text-[#e8f0ff] font-mono font-bold">{resident.apt}</div>
-                            <div className="text-[10px] text-[#3d5a7a]">Bloco {resident.block} · {resident.floor}º Andar</div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="text-[#7a9bbf]">{resident.phone}</div>
-                            <div className="text-[10px] text-[#3d5a7a]">{resident.email}</div>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className="text-[#e8f0ff] font-head font-bold text-base">{resident.deliveries}</span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            {resident.pendingDeliveries > 0 ? (
-                              <span className="bg-[#ffa62b]/15 text-[#ffa62b] text-[10px] px-2 py-0.5 rounded-full font-medium">
-                                {resident.pendingDeliveries} pendente{resident.pendingDeliveries > 1 ? "s" : ""}
-                              </span>
-                            ) : (
-                              <span className="text-[#3d5a7a] text-[10px]">—</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-[#7a9bbf] font-mono text-[10px]">
-                            {resident.lastDelivery ?? "—"}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_BADGE[resident.status]}`}>
-                              {resident.status}
+                            <span className="text-[#e8f0ff] font-medium">{resident.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="text-[#7a9bbf]">{resident.phone}</div>
+                          <div className="text-[10px] text-[#3d5a7a]">{resident.email}</div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-[#e8f0ff] font-head font-bold text-base">{resident.deliveries}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {resident.pendingDeliveries > 0 ? (
+                            <span className="bg-[#ffa62b]/15 text-[#ffa62b] text-[10px] px-2 py-0.5 rounded-full font-medium">
+                              {resident.pendingDeliveries} pendente{resident.pendingDeliveries > 1 ? "s" : ""}
                             </span>
-                          </td>
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2 text-[#3d5a7a]">
-                              <button onClick={() => setSelected(resident)} className="hover:text-[#00aaff] transition-colors" title="Ver detalhes">
-                                <Eye size={12} />
-                              </button>
-                              <button className="hover:text-[#00aaff] transition-colors" title="Editar">
-                                <Pencil size={12} />
-                              </button>
-                              <button className="hover:text-[#00aaff] transition-colors" title="Mais">
-                                <MoreHorizontal size={12} />
+                          ) : (
+                            <span className="text-[#3d5a7a] text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-[#7a9bbf] font-mono text-[10px]">
+                          {resident.lastDelivery ?? "—"}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_BADGE[resident.status]}`}>
+                            {resident.status}
+                          </span>
+                        </td>
+                      </tr>
+
+                      {isExpanded && (
+                        <tr key={`${resident.id}-exp`} className="bg-[#0a1628]/60 border-b border-[#1e3050]/50">
+                          <td colSpan={8} className="px-6 py-3">
+                            <div className="flex items-center gap-6 text-xs">
+                              <div className="flex items-center gap-1.5">
+                                <Mail size={11} className="text-[#3d5a7a]" />
+                                <span className="text-[#7a9bbf]">{resident.email}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Users size={11} className="text-[#3d5a7a]" />
+                                <span className="text-[#7a9bbf]">CPF: <span className="text-[#e8f0ff] font-mono">{resident.cpf}</span></span>
+                              </div>
+                              {resident.notes && (
+                                <div className="flex items-center gap-1.5">
+                                  <AlertTriangle size={11} className="text-[#ffa62b]" />
+                                  <span className="text-[#ffa62b]">{resident.notes}</span>
+                                </div>
+                              )}
+                              <button onClick={() => setSelected(resident)}
+                                className="ml-auto text-[#00aaff] hover:underline flex items-center gap-1">
+                                <Eye size={11} /> Ver histórico completo
                               </button>
                             </div>
                           </td>
                         </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
 
-                        {isExpanded && (
-                          <tr key={`${resident.id}-exp`} className="bg-[#0a1628]/60 border-b border-[#1e3050]/50">
-                            <td colSpan={9} className="px-6 py-3">
-                              <div className="flex items-center gap-6 text-xs">
-                                <div className="flex items-center gap-1.5">
-                                  <Mail size={11} className="text-[#3d5a7a]" />
-                                  <span className="text-[#7a9bbf]">{resident.email}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users size={11} className="text-[#3d5a7a]" />
-                                  <span className="text-[#7a9bbf]">CPF: <span className="text-[#e8f0ff] font-mono">{resident.cpf}</span></span>
-                                </div>
-                                {resident.notes && (
-                                  <div className="flex items-center gap-1.5">
-                                    <AlertTriangle size={11} className="text-[#ffa62b]" />
-                                    <span className="text-[#ffa62b]">{resident.notes}</span>
-                                  </div>
-                                )}
-                                <button onClick={() => setSelected(resident)}
-                                  className="ml-auto text-[#00aaff] hover:underline flex items-center gap-1">
-                                  <Eye size={11} /> Ver histórico completo
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              {filtered.length === 0 && (
-                <div className="flex flex-col items-center gap-2 py-12">
-                  <Users size={24} className="text-[#3d5a7a]" />
-                  <span className="text-sm text-[#7a9bbf]">Nenhum morador encontrado</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Cards view */}
-          {view === "grid" && (
-            <div className="grid grid-cols-3 gap-4">
-              {filtered.map((resident) => {
-                const avatarColor = AVATAR_COLORS[parseInt(resident.id) % AVATAR_COLORS.length];
-                return (
-                  <div key={resident.id}
-                    onClick={() => setSelected(resident)}
-                    className={`bg-[#0f1e35] border border-[#1e3050] rounded-xl p-4 cursor-pointer hover:bg-[#1a2d50]/60 hover:border-[#3d5a7a] transition-all ${
-                      resident.status === "Bloqueado" ? "opacity-60" : ""
-                    }`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-head font-bold text-sm ${avatarColor}`}>
-                          {initials(resident.name)}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-[#e8f0ff]">{resident.name}</div>
-                          <div className="text-[10px] text-[#7a9bbf]">Apto {resident.apt} · Bloco {resident.block}</div>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_BADGE[resident.status]}`}>
-                        {resident.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 mb-3">
-                      {[
-                        { label: "Entregas", value: resident.deliveries,       color: "text-[#e8f0ff]" },
-                        { label: "Pendentes",value: resident.pendingDeliveries, color: resident.pendingDeliveries > 0 ? "text-[#ffa62b]" : "text-[#00c88c]" },
-                        { label: "Andar",    value: `${resident.floor}º`,       color: "text-[#e8f0ff]" },
-                      ].map(({ label, value, color }) => (
-                        <div key={label} className="bg-[#0a1628] rounded-lg p-2 text-center">
-                          <div className={`text-base font-head font-bold ${color}`}>{value}</div>
-                          <div className="text-[9px] text-[#3d5a7a] mt-0.5">{label}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        <Phone size={9} className="text-[#3d5a7a]" />
-                        <span className="text-[#7a9bbf]">{resident.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        <Clock size={9} className="text-[#3d5a7a]" />
-                        <span className="text-[#7a9bbf]">Última entrega: {resident.lastDelivery ?? "—"}</span>
-                      </div>
-                    </div>
-
-                    {resident.notes && (
-                      <div className="mt-2 flex items-start gap-1.5">
-                        <AlertTriangle size={9} className="text-[#ffa62b] mt-0.5 flex-shrink-0" />
-                        <span className="text-[9px] text-[#ffa62b] line-clamp-1">{resident.notes}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <Users size={24} className="text-[#3d5a7a]" />
+                <span className="text-sm text-[#7a9bbf]">Nenhum morador encontrado</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {selectedResident && (
         <ResidentDrawer resident={selectedResident} onClose={() => setSelected(null)} />
       )}
-
-      {showRegister && <RegisterModal onClose={() => setShowRegister(false)} />}
     </div>
   );
 }

@@ -169,6 +169,51 @@ function mapDeliveryStatus(status: number): "Ocupado" | "Atrasado" | "Retirado" 
   }
 }
 
+// Serviço de usuários/moradores
+export const userService = {
+  getAll: async () => {
+    try {
+      const response = await apiClient.get('/users');
+      // O backend retorna um array direto, não encapsulado em { data: [...] }
+      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      
+      // Filtrar apenas moradores (role = "Morador" ou "User") - excluindo Admin e Porteiro
+      const moradores = data.filter((user: any) => user.role === "Morador" || user.role === "User");
+      
+      // Transformar dados do backend para formato esperado pelo frontend
+      return moradores.map((user: any, index: number) => {
+        // Gerar dados simulados para campos não existentes no backend
+        const userDeliveries = (index % 3) + 7;
+        const pendingCount = Math.random() > 0.7 ? 1 : 0;
+        const lastDeliveryDate = new Date();
+        lastDeliveryDate.setDate(lastDeliveryDate.getDate() - Math.floor(Math.random() * 7));
+        
+        return {
+          id: user.id,
+          name: user.name,
+          phone: `(11) ${9 + index}${Math.random() > 0.5 ? "8" : "9"}-${Math.floor(Math.random() * 9000) + 1000}`,
+          email: user.email,
+          cpf: `${Math.floor(Math.random() * 900) + 100}.${Math.floor(Math.random() * 900) + 100}.${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 90) + 10}`,
+          status: "Ativo",
+          since: new Date(user.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+          deliveries: userDeliveries,
+          pendingDeliveries: pendingCount,
+          lastDelivery: lastDeliveryDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+          notes: index % 7 === 0 ? "Preferência de notificação por SMS" : undefined,
+        };
+      });
+    } catch (error) {
+      console.error("Erro ao buscar moradores:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id: string) => {
+    const response = await apiClient.get(`/users/${id}`);
+    return response.data.data;
+  },
+};
+
 // Serviço de KPI - Calcula métricas baseado em dados reais
 export const kpiService = {
   calculate: async () => {
