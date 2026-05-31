@@ -8,6 +8,7 @@ import {
   Calendar, Archive, RotateCcw, Eye,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type DeliveryStatus = "Aguardando" | "Atrasado" | "Retirado" | "Cancelado";
@@ -311,6 +312,7 @@ function RegisterModal({ onClose }: { onClose: () => void }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function EntregasPage() {
+  const { user, isLoading } = useProtectedRoute();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<DeliveryStatus | "all">("all");
   const [filterCompany, setFilterCompany] = useState("all");
@@ -355,9 +357,20 @@ export default function EntregasPage() {
     else { setSortField(field); setSortAsc(false); }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#060d18]">
+        <div className="text-center">
+          <div className="inline-block w-12 h-12 rounded-full border-4 border-[#1e3050] border-t-[#00aaff] animate-spin mb-4"></div>
+          <p className="text-[#7a9bbf] text-sm">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#060d18]">
-      <Sidebar />
+      <Sidebar user={user} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
