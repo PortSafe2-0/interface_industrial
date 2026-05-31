@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Search, Download, ChevronLeft, ChevronRight, Pencil, MoreHorizontal } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Delivery } from "../types";
 
 interface DeliveriesTableProps { deliveries: Delivery[]; }
@@ -38,23 +38,13 @@ export default function DeliveriesTable({ deliveries }: DeliveriesTableProps) {
               className="bg-[#0a1628] border border-[#1e3050] rounded-lg pl-7 pr-3 py-1.5 text-xs text-[#e8f0ff] placeholder-[#3d5a7a] focus:outline-none focus:border-[#00aaff]/50 w-56"
             />
           </div>
-          <select className="bg-[#0a1628] border border-[#1e3050] rounded-lg px-2.5 py-1.5 text-xs text-[#7a9bbf] focus:outline-none cursor-pointer">
-            <option>Status</option>
-            <option>Ocupado</option>
-            <option>Atrasado</option>
-            <option>Retirado</option>
-          </select>
-          <button className="flex items-center gap-1.5 bg-[#00aaff]/10 border border-[#00aaff]/30 text-[#00aaff] text-xs px-3 py-1.5 rounded-lg hover:bg-[#00aaff]/20 transition-colors">
-            <Download size={12} />
-            Export reporte
-          </button>
         </div>
       </div>
 
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-[#1e3050]">
-            {["Armário", "Morador", "Entregador", "Chegou em ↓", "Tempo de espera", "Status", "Ação"].map((h) => (
+            {["Armário", "Morador", "Entregador", "Chegou em ↓", "Tempo de espera", "Status"].map((h) => (
               <th key={h} className="text-left text-[#7a9bbf] font-medium py-2 px-2">{h}</th>
             ))}
           </tr>
@@ -76,12 +66,6 @@ export default function DeliveriesTable({ deliveries }: DeliveriesTableProps) {
                 <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-medium ${statusBadge[d.status]}`}>
                   {d.status}
                 </span>
-              </td>
-              <td className="py-2.5 px-2">
-                <div className="flex items-center gap-2 text-[#3d5a7a]">
-                  <button className="hover:text-[#00aaff] transition-colors"><Pencil size={12} /></button>
-                  <button className="hover:text-[#00aaff] transition-colors"><MoreHorizontal size={12} /></button>
-                </div>
               </td>
             </tr>
           ))}
