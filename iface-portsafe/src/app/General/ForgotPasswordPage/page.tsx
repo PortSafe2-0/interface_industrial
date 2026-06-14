@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import IconLogo from '@/assets/icons/icon_logo.png';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import { useRouter } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import Image from 'next/image';
@@ -27,11 +27,7 @@ const ForgotPasswordPage: React.FC = () => {
     }
 
     try {
-      await axios.post(
-        '/api/Auth/SolicitarResetSenha',
-        { Email: email },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      await apiClient.post('/auth/forgot-password', { email });
 
       // SUCESSO! (sempre retorna 200 por segurança)
       setSuccess('Código enviado! Verifique seu e-mail (e a pasta de spam).');

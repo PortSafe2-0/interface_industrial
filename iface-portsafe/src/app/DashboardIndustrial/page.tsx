@@ -10,15 +10,21 @@ import AlertsPanel from "@/components/AlertsPanel";
 import { mockAlerts, mockFeed } from "@/mock-data";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { lockerService, deliveryService, kpiService, chartService } from "@/services/api";
-import type { KPI } from "@/types";
+import type { KPI, Locker, Delivery } from "@/types";
+
+interface ChartDay {
+  day: string;
+  value: number;
+  today?: boolean;
+}
 
 export default function Dashboard() {
   const [time, setTime] = useState("");
   const { user, isLoading } = useProtectedRoute();
-  const [lockers, setLockers] = useState([]);
-  const [deliveries, setDeliveries] = useState([]);
+  const [lockers, setLockers] = useState<Locker[]>([]);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [kpi, setKpi] = useState<KPI | null>(null);
-  const [chartData, setChartData] = useState([]);
+  const [chartData, setChartData] = useState<ChartDay[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {

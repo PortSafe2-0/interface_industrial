@@ -4,7 +4,7 @@ import React, { useState, Suspense } from 'react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import IconLogo from '@/assets/icons/icon_logo.png';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
@@ -40,11 +40,10 @@ function ResetPasswordForm() {
     }
 
     try {
-      await axios.post('/api/Auth/RedefinirSenha', {
-        Email: email,
-        Token: code,
-        NovaSenha: password,
-        ConfirmarSenha: confirmPassword
+      await apiClient.post('/auth/reset-password', {
+        email,
+        code,
+        newPassword: password,
       });
 
       setSuccess('Senha redefinida com sucesso! Redirecionando...');
